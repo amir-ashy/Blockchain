@@ -13,12 +13,12 @@ namespace Blockchain
     {
         private static int MINING_PERIOD = 10000;
         private TransactionPool TransactionPool { get => DependencyManager.TransactionPool; }
-        public List<Block> MinedBlockList { get; private set; }
+        public List<Block> Blockchain { get; private set; }
         private CancellationTokenSource cancellationToken;
 
         public BlockMiner()
         {
-            MinedBlockList = new List<Block>();
+            Blockchain = new List<Block>();
         }
         public void Start()
         {
@@ -45,7 +45,7 @@ namespace Blockchain
         }
         private void GenerateBlock()
         {
-            var lastBlock = MinedBlockList.LastOrDefault();
+            var lastBlock = Blockchain.LastOrDefault();
             var block = new Block()
             {
                 TimeStamp = DateTime.Now,
@@ -55,7 +55,7 @@ namespace Blockchain
                 PrevHash = lastBlock?.Hash ?? string.Empty
             };
             MineBlock(block);
-            MinedBlockList.Add(block);
+            Blockchain.Add(block);
         }
 
         private void MineBlock(Block block)

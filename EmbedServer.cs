@@ -50,15 +50,15 @@ namespace Blockchain
 
             //GET http://localhost:9696/api/blocks
             [Route(HttpVerbs.Get, "/blocks")]
-            public string GetAllBlocks() => JsonConvert.SerializeObject(DependencyManager.BlockMiner.MinedBlockList);
+            public string GetAllBlocks() => JsonConvert.SerializeObject(DependencyManager.BlockMiner.Blockchain);
 
             //GET http://localhost:9696/api/blocks/index/{index?}
             [Route(HttpVerbs.Get, "/blocks/index/{index?}")]
             public string GetAllBlocks(int index)
             {
                 Model.Block block = null;
-                if (index < DependencyManager.BlockMiner.MinedBlockList.Count)
-                    block = DependencyManager.BlockMiner.MinedBlockList[index];
+                if (index < DependencyManager.BlockMiner.Blockchain.Count)
+                    block = DependencyManager.BlockMiner.Blockchain[index];
                 return JsonConvert.SerializeObject(block);
             }
 
@@ -66,7 +66,7 @@ namespace Blockchain
             [Route(HttpVerbs.Get, "/blocks/latest")]
             public string GetLatestBlocks()
             {
-                var block = DependencyManager.BlockMiner.MinedBlockList.LastOrDefault();
+                var block = DependencyManager.BlockMiner.Blockchain.LastOrDefault();
                 return JsonConvert.SerializeObject(block);
             }
 
