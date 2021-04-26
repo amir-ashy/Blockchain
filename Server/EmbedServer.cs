@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Blockchain.Miner;
+using Microsoft.Extensions.Configuration;
 
 namespace Blockchain.Server
 {
@@ -18,9 +19,9 @@ namespace Blockchain.Server
 
         private WebServer server;
         private string url;
-        public EmbedServer(TransactionPool transactionPool, IBlockMiner blockMiner, ILoggerFactory loggerFactory)
+        public EmbedServer(TransactionPool transactionPool, IBlockMiner blockMiner, ILoggerFactory loggerFactory, IConfigurationRoot config)
         {
-            string port = "5449";
+            string port = config.GetSection("RpcPort").Get<string>();
             url = $"http://localhost:{port}/";
 
             server = CreateWebServer(url);
