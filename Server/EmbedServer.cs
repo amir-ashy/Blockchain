@@ -6,29 +6,38 @@ using System;
 using Newtonsoft.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Blockchain.Miner;
 
 namespace Blockchain.Server
 {
     public class EmbedServer : IRpcServer
     {
+        private readonly IBlockMiner blockMiner;
+        private readonly TransactionPool transactionPool;
+        private readonly ILogger<EmbedServer> logger;
+
         private WebServer server;
         private string url;
-        public EmbedServer(string port)
+        public EmbedServer(TransactionPool transactionPool, IBlockMiner blockMiner, ILoggerFactory loggerFactory)
         {
+            string port = "5449";
             url = $"http://localhost:{port}/";
 
             server = CreateWebServer(url);
+            this.transactionPool = transactionPool;
+            this.blockMiner = blockMiner;
+            this.logger = loggerFactory.CreateLogger<EmbedServer>();
         }
         public void Stop()
         {
             server.Dispose();
-            DependencyManager.GetLogger<EmbedServer>().LogInformation("http server stopped");
+            logger.LogInformation("http server stopped");
         }
         public void Start()
         {
             // Once we've registered our modules and configured them, we call the RunAsync() method.
             server.RunAsync();
-            DependencyManager.GetLogger<EmbedServer>().LogInformation($"http server available at {url}");
+            logger.LogInformation($"http server available at {url}api");
         }
 
         private WebServer CreateWebServer(string url)
@@ -37,7 +46,7 @@ namespace Blockchain.Server
                 .WithUrlPrefix(url)
                 .WithMode(HttpListenerMode.EmbedIO))
                 .WithLocalSessionManager()
-                .WithWebApi("/api", m => m.WithController<Controller>())
+                .WithWebApi("/api", m => m.WithController(() => new Controller(blockMiner, transactionPool)))
                 .WithModule(new ActionModule("/", HttpVerbs.Any, ctx => ctx.SendDataAsync(new { Message = "Error" })));
 
             return server;
@@ -45,18 +54,26 @@ namespace Blockchain.Server
 
         public sealed class Controller : WebApiController
         {
+            private readonly IBlockMiner blockMiner;
+            private readonly TransactionPool transactionPool;
+
+            public Controller(IBlockMiner blockMiner, TransactionPool transactionPool)
+            {
+                this.blockMiner = blockMiner;
+                this.transactionPool = transactionPool;
+            }
 
             //GET http://localhost:9696/api/blocks
             [Route(HttpVerbs.Get, "/blocks")]
-            public string GetAllBlocks() => JsonConvert.SerializeObject(DependencyManager.BlockMiner.Blockchain);
+            public string GetAllBlocks() => JsonConvert.SerializeObject(blockMiner.Blockchain);
 
             //GET http://localhost:9696/api/blocks/index/{index?}
             [Route(HttpVerbs.Get, "/blocks/index/{index?}")]
             public string GetAllBlocks(int index)
             {
                 Model.Block block = null;
-                if (index < DependencyManager.BlockMiner.Blockchain.Count)
-                    block = DependencyManager.BlockMiner.Blockchain[index];
+                if (index < blockMiner.Blockchain.Count)
+                    block = blockMiner.Blockchain[index];
                 return JsonConvert.SerializeObject(block);
             }
 
@@ -64,7 +81,7 @@ namespace Blockchain.Server
             [Route(HttpVerbs.Get, "/blocks/latest")]
             public string GetLatestBlocks()
             {
-                var block = DependencyManager.BlockMiner.Blockchain.LastOrDefault();
+                var block = blockMiner.Blockchain.LastOrDefault();
                 return JsonConvert.SerializeObject(block);
             }
 
@@ -75,7 +92,7 @@ namespace Blockchain.Server
             {
                 var data = HttpContext.GetRequestDataAsync<Model.Transaction>();
                 if (data != null && data.Result != null)
-                    DependencyManager.TransactionPool.AddRaw(data.Result);
+                    transactionPool.AddRaw(data.Result);
             }
         }
     }

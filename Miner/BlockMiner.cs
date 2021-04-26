@@ -13,24 +13,29 @@ namespace Blockchain.Miner
     public class BlockMiner : IBlockMiner
     {
         private static int MINING_PERIOD = 10000;
-        private TransactionPool TransactionPool { get => DependencyManager.TransactionPool; }
+
+        private readonly TransactionPool transactionPool;
+        private readonly ILogger<BlockMiner> logger;
+
         public List<Block> Blockchain { get; private set; }
         private CancellationTokenSource cancellationToken;
 
-        public BlockMiner()
+        public BlockMiner(TransactionPool transactionPool , ILoggerFactory loggerFactory)
         {
             Blockchain = new List<Block>();
+            this.transactionPool = transactionPool;
+            this.logger = loggerFactory.CreateLogger<BlockMiner>();
         }
         public void Start()
         {
             cancellationToken = new CancellationTokenSource();
             Task.Run(() => DoGenerateBlock(), cancellationToken.Token);
-            DependencyManager.GetLogger<BlockMiner>().LogInformation("Mining has started");
+            logger.LogInformation("Mining has started");
         }
         public void Stop()
         {
             cancellationToken.Cancel();
-            DependencyManager.GetLogger<BlockMiner>().LogInformation("Mining has stopped");
+            logger.LogInformation("Mining has stopped");
         }
 
         private void DoGenerateBlock()
@@ -51,7 +56,7 @@ namespace Blockchain.Miner
             {
                 TimeStamp = DateTime.Now,
                 Nounce = 0,
-                TransactionList = TransactionPool.TakeAll(),
+                TransactionList = transactionPool.TakeAll(),
                 Index = (lastBlock?.Index + 1 ?? 0),
                 PrevHash = lastBlock?.Hash ?? string.Empty
             };
