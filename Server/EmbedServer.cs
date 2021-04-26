@@ -2,12 +2,11 @@ using EmbedIO;
 using EmbedIO.Actions;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
-using System;
-using Newtonsoft.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Blockchain.Miner;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Blockchain.Server
 {
@@ -66,7 +65,7 @@ namespace Blockchain.Server
 
             //GET http://localhost:9696/api/blocks
             [Route(HttpVerbs.Get, "/blocks")]
-            public string GetAllBlocks() => JsonConvert.SerializeObject(blockMiner.Blockchain);
+            public string GetAllBlocks() => JsonSerializer.Serialize(blockMiner.Blockchain);
 
             //GET http://localhost:9696/api/blocks/index/{index?}
             [Route(HttpVerbs.Get, "/blocks/index/{index?}")]
@@ -75,7 +74,7 @@ namespace Blockchain.Server
                 Model.Block block = null;
                 if (index < blockMiner.Blockchain.Count)
                     block = blockMiner.Blockchain[index];
-                return JsonConvert.SerializeObject(block);
+                return JsonSerializer.Serialize(block);
             }
 
             //GET http://localhost:9696/api/blocks/latest
@@ -83,7 +82,7 @@ namespace Blockchain.Server
             public string GetLatestBlocks()
             {
                 var block = blockMiner.Blockchain.LastOrDefault();
-                return JsonConvert.SerializeObject(block);
+                return JsonSerializer.Serialize(block);
             }
 
             //Post http://localhost:9696/api/add
