@@ -1,4 +1,5 @@
 ﻿using Blockchain.Model;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,18 +14,22 @@ namespace Blockchain.Miner
     public class BlockMiner : IBlockMiner
     {
         private static int MINING_PERIOD = 10000;
+        private static int MINING_REWARD = 2;
 
         private readonly TransactionPool transactionPool;
         private readonly ILogger<BlockMiner> logger;
 
+        private readonly string nodeName;
+
         public List<Block> Blockchain { get; private set; }
         private CancellationTokenSource cancellationToken;
 
-        public BlockMiner(TransactionPool transactionPool , ILoggerFactory loggerFactory)
+        public BlockMiner(TransactionPool transactionPool, ILoggerFactory loggerFactory, IConfigurationRoot config)
         {
             Blockchain = new List<Block>();
             this.transactionPool = transactionPool;
-            this.logger = loggerFactory.CreateLogger<BlockMiner>();
+            logger = loggerFactory.CreateLogger<BlockMiner>();
+            nodeName = config.GetSection("NodeName").Get<string>();
         }
         public void Start()
         {
@@ -52,11 +57,18 @@ namespace Blockchain.Miner
         private void GenerateBlock()
         {
             var lastBlock = Blockchain.LastOrDefault();
+            var transactionList = transactionPool.TakeAll();
+            transactionList.Add(new Transaction()
+            {
+                Amount = MINING_REWARD,
+                From = "-",
+                To = nodeName
+            });
             var block = new Block()
             {
                 TimeStamp = DateTime.Now,
                 Nounce = 0,
-                TransactionList = transactionPool.TakeAll(),
+                TransactionList = transactionList,
                 Index = (lastBlock?.Index + 1 ?? 0),
                 PrevHash = lastBlock?.Hash ?? string.Empty
             };
