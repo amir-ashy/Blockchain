@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Blockchain.Miner;
+using Blockchain.Server;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 
@@ -8,21 +10,20 @@ namespace Blockchain
     {
         public static void Main(string[] args)
         {
-
-
             DependencyManager.Fill();
             DependencyManager.BlockMiner.Start();
-            DependencyManager.EmbedServer.Start();
+            DependencyManager.RpcServer.Start();
             Console.ReadKey();
             DependencyManager.BlockMiner.Stop();
-            DependencyManager.EmbedServer.Stop();
+            DependencyManager.RpcServer.Stop();
         }
     }
     public static class DependencyManager
     {
         public static TransactionPool TransactionPool => serviceProvider.GetService<TransactionPool>();
-        public static BlockMiner BlockMiner => serviceProvider.GetService<BlockMiner>();
-        public static EmbedServer EmbedServer => serviceProvider.GetService<EmbedServer>();
+        public static IBlockMiner BlockMiner => serviceProvider.GetService<IBlockMiner>();
+        public static IRpcServer RpcServer => serviceProvider.GetService<IRpcServer>();
+        public static ILogger<T> GetLogger<T>() => serviceProvider.GetService<ILoggerFactory>().CreateLogger<T>();
 
         private static ServiceProvider serviceProvider;
         public static void Fill()
@@ -30,14 +31,12 @@ namespace Blockchain
             serviceProvider = new ServiceCollection()
             .AddLogging(builder => builder.AddConsole())
             .AddSingleton<TransactionPool>()
-            .AddSingleton<BlockMiner>()
-            .AddSingleton(instance => new EmbedServer("5449"))
+            .AddSingleton<IBlockMiner, BlockMiner>()
+            .AddSingleton<IRpcServer>(instance => new EmbedServer("5449"))
             .BuildServiceProvider();
 
-
-            ILogger logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger<Program>();
-            logger.LogInformation("This is a test of the emergency broadcast system.");
-
         }
+
+
     }
 }

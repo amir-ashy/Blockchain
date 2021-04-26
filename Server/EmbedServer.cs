@@ -5,10 +5,11 @@ using EmbedIO.WebApi;
 using System;
 using Newtonsoft.Json;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
-namespace Blockchain
+namespace Blockchain.Server
 {
-    public class EmbedServer
+    public class EmbedServer : IRpcServer
     {
         private WebServer server;
         private string url;
@@ -21,13 +22,13 @@ namespace Blockchain
         public void Stop()
         {
             server.Dispose();
-            Console.WriteLine($"http server stopped");
+            DependencyManager.GetLogger<EmbedServer>().LogInformation("http server stopped");
         }
         public void Start()
         {
             // Once we've registered our modules and configured them, we call the RunAsync() method.
             server.RunAsync();
-            Console.WriteLine($"http server available at {url}");
+            DependencyManager.GetLogger<EmbedServer>().LogInformation($"http server available at {url}");
         }
 
         private WebServer CreateWebServer(string url)
@@ -38,9 +39,6 @@ namespace Blockchain
                 .WithLocalSessionManager()
                 .WithWebApi("/api", m => m.WithController<Controller>())
                 .WithModule(new ActionModule("/", HttpVerbs.Any, ctx => ctx.SendDataAsync(new { Message = "Error" })));
-
-            // Listen for state changes.
-            // server.StateChanged += (s, e) => $"WebServer New State - {e.NewState}".Info();
 
             return server;
         }
